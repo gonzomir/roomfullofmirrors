@@ -1,10 +1,10 @@
 
 var ConnMan = {
 
-  baseURL: 'http://192.168.1.144/rfom/',
-  
+	baseURL: 'http://192.168.1.144/rfom/',
+	
 	callQuery : function (q) {
-		var httpRequest = this.prepareRequest();	
+		var httpRequest = this.prepareRequest();
 		httpRequest.open("GET", this.baseURL + 'rfom.php?' + q, true);
 		httpRequest.send(null);
 		return false;
@@ -29,15 +29,36 @@ var ConnMan = {
 			// function may invoke a new request meanwhile.
 			if (res && document.location.href != res){
 				document.location.href = res;
-      }
+			}
 
 		}
 	},
 	
 	prepareRequest : function () {
+
 		var httpRequest = new XMLHttpRequest();
+		if ("withCredentials" in httpRequest) {
+
+			// Check if the XMLHttpRequest object has a "withCredentials" property.
+			// "withCredentials" only exists on XMLHTTPRequest2 objects.
+
+		} else if (typeof XDomainRequest != "undefined") {
+
+			// Otherwise, check if XDomainRequest.
+			// XDomainRequest only exists in IE, and is IE's way of making CORS requests.
+			httpRequest = new XDomainRequest();
+
+		} else {
+
+			// Otherwise, CORS is not supported by the browser.
+			httpRequest = null;
+			throw("CORS is not supported by the browser.");
+
+		}
+
 		httpRequest.onreadystatechange = this.requestReturn;
 		return httpRequest;
+
 	}
 	
 }
@@ -45,7 +66,7 @@ var ConnMan = {
 
 
 window.setInterval(function(){
-  ConnMan.callQuery('do=getURL');
+	ConnMan.callQuery('do=getURL');
 }, 1000);
 
 ConnMan.callQuery('do=setURL&url=' + escape(document.location.href));
