@@ -1,73 +1,84 @@
+function parseURL(url) {
+  var a =  document.createElement('a');
+  a.href = url;
+  return {
+    source: url,
+    protocol: a.protocol.replace(':',''),
+    host: a.hostname,
+    port: a.port,
+    query: a.search,
+    params: (function(){
+      var ret = {},
+        seg = a.search.replace(/^\?/,'').split('&'),
+        len = seg.length, i = 0, s;
+      for (;i<len;i++) {
+        if (!seg[i]) { continue; }
+        s = seg[i].split('=');
+        ret[s[0]] = s[1];
+      }
+      return ret;
+    })(),
+    file: (a.pathname.match(/\/([^\/?#]+)$/i) || [,''])[1],
+    hash: a.hash.replace('#',''),
+    path: a.pathname.replace(/^([^\/])/,'/$1'),
+    relative: (a.href.match(/tps?:\/\/[^\/]+(.+)/) || [,''])[1],
+    segments: a.pathname.replace(/^\//,'').split('/')
+  };
+}
 
-var ConnMan = {
+var rfom = {
 
-	baseURL: 'http://192.168.1.144/rfom/',
-	
+	baseURL: 'http://local/rfom/',
+
+	u: parseURL(this.baseURL),
+
+	setURL : function(){
+		this.callQuery('do=setURL&url=' + escape(document.location.href) + '&t=' + (new Date()).getTime());
+	},
+
+	getURL : function(){
+		this.callQuery('do=getURL&t=' + (new Date()).getTime());
+	},
+
 	callQuery : function (q) {
 		var httpRequest = this.prepareRequest();
 		httpRequest.open("GET", this.baseURL + 'rfom.php?' + q, true);
 		httpRequest.send(null);
-		return false;
 	},
 	
-	requestReturn : function (e) {
-		if (e.target.readyState == 4){
-
-			var res = null;
-			if (e.target.status != 200){
-				if (e.target.status !=0){
-					throw("HTTP error " + e.target.status + ": " + e.target.statusText + ": " + e.target.responseText);
-				}
-			}
-			else {
-				res = e.target.responseText;
-			}
-			
-			e.target.abort();
-			
-			// you must call this after you've finished with connection because the response
-			// function may invoke a new request meanwhile.
-			if (res && document.location.href != res){
-				document.location.href = res;
-			}
-
-		}
-	},
 	
 	prepareRequest : function () {
 
-		var httpRequest = new XMLHttpRequest();
-		if ("withCredentials" in httpRequest) {
-
-			// Check if the XMLHttpRequest object has a "withCredentials" property.
-			// "withCredentials" only exists on XMLHTTPRequest2 objects.
-
-		} else if (typeof XDomainRequest != "undefined") {
-
-			// Otherwise, check if XDomainRequest.
-			// XDomainRequest only exists in IE, and is IE's way of making CORS requests.
-			httpRequest = new XDomainRequest();
-
-		} else {
-
-			// Otherwise, CORS is not supported by the browser.
-			httpRequest = null;
-			throw("CORS is not supported by the browser.");
-
+		var xhr = new XMLHttpRequest();
+		if(document.location.hostname != this.u.host){ 
+			if ("withCredentials" in xhr) {
+				// Check if the XMLxhr object has a "withCredentials" property.
+				// "withCredentials" only exists on XMLxhr2 objects.
+			} else if (typeof XDomainRequest != "undefined") {
+				// Otherwise, check if XDomainRequest.
+				// XDomainRequest only exists in IE, and is IE's way of making CORS requests.
+				xhr = new XDomainRequest();
+			} else {
+				// Otherwise, CORS is not supported by the browser.
+				throw("CORS is not supported by the browser.");
+			}
 		}
 
-		httpRequest.onreadystatechange = this.requestReturn;
-		return httpRequest;
+		xhr.onload = function(){
+			var res = xhr.responseText;
+			if (res !='' && document.location.href != res){
+				document.location.href = res;
+			}
+		};
+		return xhr;
 
 	}
 	
 }
 
-
+rfom.setURL();
 
 window.setInterval(function(){
-	ConnMan.callQuery('do=getURL');
+	rfom.getURL();
 }, 1000);
-
-ConnMan.callQuery('do=setURL&url=' + escape(document.location.href));
 
