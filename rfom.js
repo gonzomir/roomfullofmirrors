@@ -32,6 +32,8 @@ var rfom = {
 
 	u: parseURL(this.baseURL),
 
+	i: null,
+
 	setURL : function(){
 		this.callQuery('do=setURL&url=' + escape(document.location.href) + '&t=' + (new Date()).getTime());
 	},
@@ -45,12 +47,12 @@ var rfom = {
 		httpRequest.open("GET", this.baseURL + 'rfom.php?' + q, true);
 		httpRequest.send(null);
 	},
-	
-	
+
+
 	prepareRequest : function () {
 
 		var xhr = new XMLHttpRequest();
-		if(document.location.hostname != this.u.host){ 
+		if(document.location.hostname != this.u.host){
 			if ("withCredentials" in xhr) {
 				// Check if the XMLxhr object has a "withCredentials" property.
 				// "withCredentials" only exists on XMLxhr2 objects.
@@ -67,18 +69,21 @@ var rfom = {
 		xhr.onload = function(){
 			var res = xhr.responseText;
 			if (res !='' && document.location.href != res){
+				if (rfom.i) {
+					window.clearInterval(rfom.i);
+				}
 				document.location.href = res;
 			}
 		};
 		return xhr;
 
 	}
-	
+
 }
 
 rfom.setURL();
 
-window.setInterval(function(){
+rfom.i = window.setInterval(function(){
 	rfom.getURL();
 }, 1000);
 
